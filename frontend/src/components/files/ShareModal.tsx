@@ -44,6 +44,7 @@ export const ShareModal = ({ file, isOpen, onClose, onUpdate }: ShareModalProps)
   const [linkExpiry, setLinkExpiry] = useState<string>('never');
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { token } = useAuth();
   const { toast } = useToast();
@@ -137,6 +138,13 @@ export const ShareModal = ({ file, isOpen, onClose, onUpdate }: ShareModalProps)
     await navigator.clipboard.writeText(generatedLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyActiveLink = async (linkToken: string, linkId: string) => {
+    const fullLink = `${window.location.origin}/shared/${linkToken}`;
+    await navigator.clipboard.writeText(fullLink);
+    setCopiedLinkId(linkId);
+    setTimeout(() => setCopiedLinkId(null), 2000);
   };
 
   const handleRevokeLink = async (linkId: string) => {
@@ -378,14 +386,24 @@ export const ShareModal = ({ file, isOpen, onClose, onUpdate }: ShareModalProps)
                             : 'No expiration'}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRevokeLink(link._id)}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleCopyActiveLink(link.token, link._id)}
+                          className="text-muted-foreground hover:text-primary"
+                        >
+                          {copiedLinkId === link._id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRevokeLink(link._id)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
