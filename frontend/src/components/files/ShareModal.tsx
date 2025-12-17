@@ -40,7 +40,6 @@ export const ShareModal = ({ file, isOpen, onClose, onUpdate }: ShareModalProps)
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
-  const [permission, setPermission] = useState<'view' | 'download'>('view');
   const [linkExpiry, setLinkExpiry] = useState<string>('never');
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -87,7 +86,7 @@ export const ShareModal = ({ file, isOpen, onClose, onUpdate }: ShareModalProps)
     try {
       await filesApi.shareWithUsers(
         file._id, 
-        { users: selectedUsers.map(u => u._id), permission }, 
+        { users: selectedUsers.map(u => u._id) }, 
         token
       );
       toast({
@@ -266,17 +265,6 @@ export const ShareModal = ({ file, isOpen, onClose, onUpdate }: ShareModalProps)
               </div>
             )}
 
-            {/* Permission Select */}
-            <Select value={permission} onValueChange={(v) => setPermission(v as 'view' | 'download')}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="view">Can view</SelectItem>
-                <SelectItem value="download">Can download</SelectItem>
-              </SelectContent>
-            </Select>
-
             <Button 
               onClick={handleShareWithUsers} 
               disabled={selectedUsers.length === 0 || isLoading}
@@ -303,7 +291,7 @@ export const ShareModal = ({ file, isOpen, onClose, onUpdate }: ShareModalProps)
                           </Avatar>
                           <div>
                             <p className="text-sm font-medium">{user.name}</p>
-                            <p className="text-xs text-muted-foreground">{share.permission}</p>
+                            <p className="text-xs text-muted-foreground">Has access</p>
                           </div>
                         </div>
                         <Button

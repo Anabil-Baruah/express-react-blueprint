@@ -160,7 +160,17 @@ router.get('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'File not found' });
     }
     
-    // Check access
+    const ownerId = file.owner && file.owner._id ? file.owner._id.toString() : file.owner.toString();
+    if (ownerId === req.user._id.toString()) {
+      await AuditLog.log({
+        file: file._id,
+        user: req.user._id,
+        action: 'view',
+        ipAddress: req.ip
+      });
+      return res.json(file);
+    }
+    
     const { hasAccess } = file.hasAccess(req.user._id);
     if (!hasAccess) {
       return res.status(403).json({ message: 'Access denied' });
@@ -240,10 +250,7 @@ router.get('/:id/download', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
     
-    // Check download permission for shared users
-    if (permission === 'view') {
-      return res.status(403).json({ message: 'You do not have download permission for this file' });
-    }
+    // Downloads allowed for any user with access
     
     // Log the download
     await AuditLog.log({
@@ -266,7 +273,7 @@ router.get('/:id/download', auth, async (req, res) => {
 // @access  Private (owner only)
 router.post('/:id/share', auth, async (req, res) => {
   try {
-    const { users, permission } = req.body;
+    const { users } = req.body;
     
     if (!users || !Array.isArray(users) || users.length === 0) {
       return res.status(400).json({ message: 'Please provide users to share with' });
@@ -293,11 +300,11 @@ router.post('/:id/share', auth, async (req, res) => {
       if (!existingShare) {
         file.sharedWith.push({
           user: userId,
-          permission: permission || 'view'
+          permission: 'download'
         });
       } else {
-        // Update permission if already shared
-        existingShare.permission = permission || 'view';
+        // Always grant full access
+        existingShare.permission = 'download';
       }
     }
     

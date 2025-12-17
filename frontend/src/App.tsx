@@ -13,6 +13,7 @@ import SharedWithMe from "./pages/SharedWithMe";
 import Activity from "./pages/Activity";
 import Settings from "./pages/Settings";
 import SharedLink from "./pages/SharedLink";
+import FilePreview from "./pages/FilePreview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const AppRoutes = () => {
       <Route path="/shared" element={<ProtectedRoute><SharedWithMe /></ProtectedRoute>} />
       <Route path="/activity" element={<ProtectedRoute><Activity /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/file/:fileId" element={<ProtectedRoute><FilePreview /></ProtectedRoute>} />
       <Route path="/shared/:shareToken" element={<SharedLink />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

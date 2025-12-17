@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FileText, 
   Download, 
-  Lock, 
   Loader2,
   AlertCircle,
   FolderOpen
@@ -13,12 +12,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { filesApi } from '@/lib/api';
 import { FileItem } from '@/types';
-import { cn } from '@/lib/utils';
 
-const SharedLink = () => {
-  const { shareToken } = useParams<{ shareToken: string }>();
+const FilePreview = () => {
+  const { fileId } = useParams<{ fileId: string }>();
   const navigate = useNavigate();
-  const { token, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { token, isLoading: authLoading } = useAuth();
   const [file, setFile] = useState<FileItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,29 +24,33 @@ const SharedLink = () => {
 
   useEffect(() => {
     const fetchFile = async () => {
-      if (!shareToken || !token) return;
-      
+      if (!fileId || !token) return;
       setIsLoading(true);
       try {
-        const data = await filesApi.accessByLink(token, shareToken) as FileItem;
+        const data = await filesApi.getFile(fileId, token) as FileItem;
         setFile(data);
         try {
-          const blob = await filesApi.downloadBlob(data._id, token);
+          const blob = await filesApi.contentById(fileId, token);
           const url = URL.createObjectURL(blob);
           setPreviewUrl(url);
         } catch {
-          setPreviewUrl(null);
+          try {
+            const blob = await filesApi.downloadBlob(fileId, token);
+            const url = URL.createObjectURL(blob);
+            setPreviewUrl(url);
+          } catch (e) {
+            setPreviewUrl(null);
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to access file');
       }
       setIsLoading(false);
     };
-
-    if (isAuthenticated && !authLoading) {
+    if (!authLoading) {
       fetchFile();
     }
-  }, [shareToken, token, isAuthenticated, authLoading]);
+  }, [fileId, token, authLoading]);
 
   const handleDownload = () => {
     if (!file || !token) return;
@@ -74,38 +76,6 @@ const SharedLink = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Show login prompt if not authenticated
-  if (!authLoading && !isAuthenticated) {
-    return (
-      <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-elevated border-0">
-          <CardContent className="pt-8 pb-8">
-            <div className="text-center space-y-6">
-              <div className="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center mx-auto">
-                <Lock className="w-8 h-8 text-warning" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
-                <p className="text-muted-foreground">
-                  You need to be logged in to access this shared file.
-                </p>
-              </div>
-              <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={() => navigate('/login')}>
-                  Sign in
-                </Button>
-                <Button className="gradient-primary" onClick={() => navigate('/register')}>
-                  Create account
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Loading state
   if (isLoading || authLoading) {
     return (
       <div className="min-h-screen gradient-hero flex items-center justify-center">
@@ -114,7 +84,6 @@ const SharedLink = () => {
     );
   }
 
-  // Error state
   if (error || !file) {
     return (
       <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
@@ -127,7 +96,7 @@ const SharedLink = () => {
               <div>
                 <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
                 <p className="text-muted-foreground">
-                  {error || 'This link may have expired or you do not have permission to access this file.'}
+                  {error || 'You do not have permission to access this file.'}
                 </p>
               </div>
               <Button onClick={() => navigate('/dashboard')}>
@@ -140,12 +109,10 @@ const SharedLink = () => {
     );
   }
 
-  // Success - show file
   return (
     <div className="min-h-screen gradient-hero p-4">
-      <div className="max-w-4xl mx-auto animate-slide-up">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-soft">
             <FolderOpen className="w-6 h-6 text-primary-foreground" />
           </div>
@@ -153,8 +120,8 @@ const SharedLink = () => {
         </div>
 
         <Card className="shadow-elevated border-0 mb-6">
-          <CardContent className="pt-8 pb-8">
-            <div className="text-center space-y-4">
+          <CardContent className="pt-6 pb-6">
+            <div className="text-center space-y-2">
               <h2 className="text-xl font-semibold break-words">{file.originalName}</h2>
               <p className="text-sm text-muted-foreground">
                 {formatFileSize(file.size)} • {file.mimeType.split('/')[1]?.toUpperCase()}
@@ -227,4 +194,4 @@ const SharedLink = () => {
   );
 };
 
-export default SharedLink;
+export default FilePreview;

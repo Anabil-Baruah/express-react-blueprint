@@ -1,8 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FileItem } from '@/types';
 import { FileCard } from './FileCard';
 import { ShareModal } from './ShareModal';
-import { FileDetailsModal } from './FileDetailsModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { filesApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -26,11 +26,11 @@ interface FileGridProps {
 export const FileGrid = ({ files, onRefresh, emptyMessage = 'No files found' }: FileGridProps) => {
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<FileItem | null>(null);
   const { token } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleShare = (file: FileItem) => {
     setSelectedFile(file);
@@ -38,14 +38,29 @@ export const FileGrid = ({ files, onRefresh, emptyMessage = 'No files found' }: 
   };
 
   const handleView = (file: FileItem) => {
-    setSelectedFile(file);
-    setDetailsModalOpen(true);
+    navigate(`/file/${file._id}`);
   };
 
   const handleDownload = (file: FileItem) => {
     if (!token) return;
-    const downloadUrl = filesApi.download(file._id, token);
-    window.open(downloadUrl, '_blank');
+    filesApi.downloadBlob(file._id, token)
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.originalName || 'download';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      })
+      .catch(() => {
+        toast({
+          title: 'Error',
+          description: 'Failed to download file',
+          variant: 'destructive',
+        });
+      });
   };
 
   const handleDeleteClick = (file: FileItem) => {
@@ -121,16 +136,7 @@ export const FileGrid = ({ files, onRefresh, emptyMessage = 'No files found' }: 
         onUpdate={onRefresh}
       />
 
-      <FileDetailsModal
-        file={selectedFile}
-        isOpen={detailsModalOpen}
-        onClose={() => setDetailsModalOpen(false)}
-        onShare={() => {
-          setDetailsModalOpen(false);
-          setShareModalOpen(true);
-        }}
-        onDownload={handleDownload}
-      />
+      {/* Mini preview modal removed in favor of full preview page */}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

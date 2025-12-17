@@ -82,20 +82,17 @@ fileSchema.index({ 'shareLinks.token': 1 });
 
 // Check if user has access to file
 fileSchema.methods.hasAccess = function(userId) {
-  // Owner always has access
-  if (this.owner.toString() === userId.toString()) {
+  const ownerId = this.owner && this.owner._id ? this.owner._id.toString() : this.owner.toString();
+  if (ownerId === userId.toString()) {
     return { hasAccess: true, isOwner: true, permission: 'download' };
   }
-  
-  // Check if user is in sharedWith list
-  const sharedEntry = this.sharedWith.find(
-    share => share.user.toString() === userId.toString()
-  );
-  
+  const sharedEntry = this.sharedWith.find((share) => {
+    const shareUserId = share.user && share.user._id ? share.user._id.toString() : share.user.toString();
+    return shareUserId === userId.toString();
+  });
   if (sharedEntry) {
     return { hasAccess: true, isOwner: false, permission: sharedEntry.permission };
   }
-  
   return { hasAccess: false, isOwner: false, permission: null };
 };
 

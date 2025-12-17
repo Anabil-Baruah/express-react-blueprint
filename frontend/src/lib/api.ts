@@ -61,7 +61,7 @@ export const filesApi = {
   deleteFile: (fileId: string, token: string) =>
     apiRequest(`/files/${fileId}`, { method: 'DELETE', token }),
   
-  shareWithUsers: (fileId: string, data: { users: string[]; permission: string }, token: string) =>
+  shareWithUsers: (fileId: string, data: { users: string[] }, token: string) =>
     apiRequest(`/files/${fileId}/share`, { method: 'POST', body: JSON.stringify(data), token }),
   
   generateShareLink: (fileId: string, data: { expiresIn?: number }, token: string) =>
@@ -76,8 +76,33 @@ export const filesApi = {
   accessByLink: (token: string, shareToken: string) =>
     apiRequest(`/files/link/${shareToken}`, { token }),
   
-  download: (fileId: string, token: string) =>
-    `${API_BASE_URL}/files/${fileId}/download?token=${token}`,
+  downloadBlob: async (fileId: string, token: string): Promise<Blob> => {
+    const response = await fetch(`${API_BASE_URL}/files/${fileId}/download`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Download failed' }));
+      throw new Error(error.message || 'Download failed');
+    }
+    return response.blob();
+  },
+  
+  contentById: async (fileId: string, token: string): Promise<Blob> => {
+    const response = await fetch(`${API_BASE_URL}/files/${fileId}/download`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Content fetch failed' }));
+      throw new Error(error.message || 'Content fetch failed');
+    }
+    return response.blob();
+  },
 };
 
 // Users API
