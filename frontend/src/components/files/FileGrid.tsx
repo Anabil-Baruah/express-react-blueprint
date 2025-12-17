@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FileItem } from '@/types';
 import { FileCard } from './FileCard';
 import { ShareModal } from './ShareModal';
+import { FileDetailsModal } from './FileDetailsModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { filesApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +29,7 @@ export const FileGrid = ({ files, onRefresh, emptyMessage = 'No files found' }: 
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<FileItem | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const { token } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -39,6 +41,11 @@ export const FileGrid = ({ files, onRefresh, emptyMessage = 'No files found' }: 
 
   const handleView = (file: FileItem) => {
     navigate(`/file/${file._id}`);
+  };
+
+  const handleDetails = (file: FileItem) => {
+    setSelectedFile(file);
+    setDetailsModalOpen(true);
   };
 
   const handleDownload = (file: FileItem) => {
@@ -125,6 +132,7 @@ export const FileGrid = ({ files, onRefresh, emptyMessage = 'No files found' }: 
             onDelete={handleDeleteClick}
             onDownload={handleDownload}
             onView={handleView}
+            onDetails={handleDetails}
           />
         ))}
       </div>
@@ -137,6 +145,16 @@ export const FileGrid = ({ files, onRefresh, emptyMessage = 'No files found' }: 
       />
 
       {/* Mini preview modal removed in favor of full preview page */}
+      <FileDetailsModal
+        file={selectedFile}
+        isOpen={detailsModalOpen}
+        onClose={() => setDetailsModalOpen(false)}
+        onShare={() => {
+          setDetailsModalOpen(false);
+          setShareModalOpen(true);
+        }}
+        onDownload={handleDownload}
+      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

@@ -28,6 +28,7 @@ interface FileCardProps {
   onDelete: (file: FileItem) => void;
   onDownload: (file: FileItem) => void;
   onView: (file: FileItem) => void;
+  onDetails: (file: FileItem) => void;
 }
 
 const getFileIcon = (mimeType: string) => {
@@ -61,7 +62,7 @@ const formatDate = (dateString: string) => {
   });
 };
 
-export const FileCard = ({ file, onShare, onDelete, onDownload, onView }: FileCardProps) => {
+export const FileCard = ({ file, onShare, onDelete, onDownload, onView, onDetails }: FileCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const FileIcon = getFileIcon(file.mimeType);
   const colorClass = getFileColor(file.mimeType);
@@ -108,7 +109,7 @@ export const FileCard = ({ file, onShare, onDelete, onDownload, onView }: FileCa
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(file); }}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDetails(file); }}>
               <Eye className="w-4 h-4 mr-2" />
               View Details
             </DropdownMenuItem>
