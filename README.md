@@ -1,51 +1,86 @@
-# Welcome to your Lovable project
+# CloudVault - File Sharing Application
 
-## How can I edit this code?
+A full-stack file sharing application similar to Google Drive, built as part of the Fullstack Developer Assignment.
 
-There are several ways of editing your application.
+## Features
 
-**Use your preferred IDE**
+### Core Features
+- **File Upload**: Support for PDF, Images, CSV, etc. with bulk upload capability (Max 50MB per file).
+- **File Storage**: Files are stored securely on the backend.
+- **Dashboard**: View uploaded files with metadata (filename, type, size, upload date).
+- **File Sharing**:
+  - Share with specific registered users (View/Download permissions).
+  - Share via generated public links (Account required for access).
+- **Access Control**: Secure authorization checks ensuring only permitted users can access files.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Bonus Features Implemented
+- **Link Expiry**: Set expiration times for shared links (1h, 24h, 7d).
+- **Audit Log**: Track file activities including uploads, views, downloads, shares, and revocations.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Tech Stack
 
-Follow these steps:
+- **Frontend**: React (Vite), TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Node.js, Express.js
+- **Database**: MongoDB
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Prerequisites
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- Node.js (v16+)
+- MongoDB (Local or Atlas connection string)
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Setup Instructions
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### 1. Backend Setup
+
+Navigate to the backend directory:
+```bash
+cd backend
 ```
 
-**Edit a file directly in GitHub**
+Install dependencies:
+```bash
+npm install
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Configure environment variables:
+1. Create a `.env` file in the `backend` directory.
+2. Copy the contents from `.env.example` or use the following:
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/cloudvault
+JWT_SECRET=your_secure_secret_key
+UPLOAD_DIR=./uploads
+FRONTEND_URL=http://localhost:5173
+```
 
-**Use GitHub Codespaces**
+Start the backend server:
+```bash
+npm start
+# Server will run on http://localhost:5000
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 2. Frontend Setup
 
-## What technologies are used for this project?
+Open a new terminal and navigate to the frontend directory:
+```bash
+cd frontend
+```
 
-This project is built with:
+Install dependencies:
+```bash
+npm install
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Start the development server:
+```bash
+npm run dev
+# Frontend will run on http://localhost:5173
+```
+
+## Usage
+
+1. Register a new account.
+2. Upload files from the dashboard.
+3. Click the menu on a file card to Share, Download, or Delete.
+4. Check the "Activity" tab to see your audit logs.
+
