@@ -18,6 +18,29 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
+(() => {
+  const File = require('./models/File');
+  (async () => {
+    try {
+      const indexes = await File.collection.indexes();
+      const tokenIdx = indexes.find((i) => i.name === 'shareLinks.token_1');
+      if (tokenIdx && tokenIdx.unique && !tokenIdx.partialFilterExpression) {
+        await File.collection.dropIndex('shareLinks.token_1');
+      }
+      await File.collection.createIndex(
+        { 'shareLinks.token': 1 },
+        {
+          name: 'shareLinks.token_1',
+          unique: true,
+          partialFilterExpression: { 'shareLinks.token': { $exists: true, $type: 'string' } },
+        }
+      );
+    } catch (e) {
+      console.error('Index normalization error:', e.message);
+    }
+  })();
+})();
+
 // Create uploads directory if it doesn't exist
 const uploadDir = process.env.UPLOAD_DIR || './uploads';
 if (!fs.existsSync(uploadDir)) {

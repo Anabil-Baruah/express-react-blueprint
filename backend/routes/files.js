@@ -94,7 +94,9 @@ router.post('/upload', auth, upload.array('files', 10), async (req, res) => {
         mimeType: file.mimetype,
         size: file.size,
         owner: req.user._id,
-        path: result.secure_url
+        path: result.secure_url,
+        sharedWith: [],
+        shareLinks: []
       });
       
       await newFile.save();

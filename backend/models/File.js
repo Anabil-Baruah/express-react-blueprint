@@ -20,8 +20,7 @@ const sharedUserSchema = new mongoose.Schema({
 const shareLinkSchema = new mongoose.Schema({
   token: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   expiresAt: {
     type: Date,
@@ -78,7 +77,13 @@ const fileSchema = new mongoose.Schema({
 // Index for faster queries
 fileSchema.index({ owner: 1 });
 fileSchema.index({ 'sharedWith.user': 1 });
-fileSchema.index({ 'shareLinks.token': 1 });
+fileSchema.index(
+  { 'shareLinks.token': 1 },
+  {
+    unique: true,
+    partialFilterExpression: { 'shareLinks.token': { $exists: true, $type: 'string' } },
+  }
+);
 
 // Check if user has access to file
 fileSchema.methods.hasAccess = function(userId) {
