@@ -6,20 +6,21 @@ const { v4: uuidv4 } = require('uuid');
 const File = require('../models/File');
 const AuditLog = require('../models/AuditLog');
 const { auth } = require('../middleware/auth');
+const cloudinary = require('cloudinary').v2;
 
 const router = express.Router();
 
-// Configure multer for file upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = process.env.UPLOAD_DIR || './uploads';
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  }
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+console.log(process.env.CLOUDINARY_CLOUD_NAME, "name")
+
+// Configure multer for file upload
+const storage = multer.memoryStorage();
 
 // File filter to validate file types
 const fileFilter = (req, file, cb) => {
@@ -61,26 +62,49 @@ router.post('/upload', auth, upload.array('files', 10), async (req, res) => {
     }
     
     const uploadedFiles = [];
+    const folder = process.env.CLOUDINARY_UPLOAD_FOLDER || 'cloudvault';
+    
+    // Helper to upload a single file buffer to Cloudinary via stream
+    const uploadToCloudinary = (buffer, options) =>
+      new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        });
+        stream.end(buffer);
+      });
     
     for (const file of req.files) {
+      // Decide resource type: images as 'image', others as 'raw'
+      const isImage = file.mimetype.startsWith('image/');
+      const resourceType = isImage ? 'image' : 'raw';
+      
+      const result = await uploadToCloudinary(file.buffer, {
+        folder,
+        resource_type: resourceType,
+        public_id: undefined, // let Cloudinary generate
+        use_filename: true,
+        filename_override: file.originalname,
+        overwrite: false,
+      });
+      
       const newFile = new File({
-        filename: file.filename,
+        filename: result.public_id,
         originalName: file.originalname,
         mimeType: file.mimetype,
         size: file.size,
         owner: req.user._id,
-        path: file.path
+        path: result.secure_url
       });
       
       await newFile.save();
       uploadedFiles.push(newFile);
       
-      // Log the upload
       await AuditLog.log({
         file: newFile._id,
         user: req.user._id,
         action: 'upload',
-        details: `Uploaded ${file.originalname}`,
+        details: `Uploaded ${file.originalname} to Cloudinary`,
         ipAddress: req.ip
       });
     }
@@ -92,13 +116,6 @@ router.post('/upload', auth, upload.array('files', 10), async (req, res) => {
     
   } catch (error) {
     console.error('Upload error:', error);
-    
-    // Clean up uploaded files on error
-    if (req.files) {
-      for (const file of req.files) {
-        fs.unlink(file.path, () => {});
-      }
-    }
     
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ message: 'File size exceeds 50MB limit' });
@@ -211,10 +228,13 @@ router.delete('/:id', auth, async (req, res) => {
     file.isDeleted = true;
     await file.save();
     
-    // Delete actual file from storage
-    fs.unlink(file.path, (err) => {
-      if (err) console.error('Error deleting file from storage:', err);
-    });
+    // Delete asset from Cloudinary
+    try {
+      const isImage = file.mimeType && file.mimeType.startsWith('image/');
+      await cloudinary.uploader.destroy(file.filename, { resource_type: isImage ? 'image' : 'raw' });
+    } catch (err) {
+      console.error('Error deleting asset from Cloudinary:', err);
+    }
     
     // Log the deletion
     await AuditLog.log({
@@ -261,7 +281,8 @@ router.get('/:id/download', auth, async (req, res) => {
       ipAddress: req.ip
     });
     
-    res.download(file.path, file.originalName);
+    // Redirect to Cloudinary URL for download/stream
+    res.redirect(file.path);
   } catch (error) {
     console.error('Download error:', error);
     res.status(500).json({ message: 'Error downloading file' });

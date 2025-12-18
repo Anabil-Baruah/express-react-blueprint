@@ -32,13 +32,7 @@ const SharedLink = () => {
       try {
         const data = await filesApi.accessByLink(token, shareToken) as FileItem;
         setFile(data);
-        try {
-          const blob = await filesApi.downloadBlob(data._id, token);
-          const url = URL.createObjectURL(blob);
-          setPreviewUrl(url);
-        } catch {
-          setPreviewUrl(null);
-        }
+        setPreviewUrl(data.path || null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to access file');
       }

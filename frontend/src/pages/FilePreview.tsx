@@ -29,19 +29,7 @@ const FilePreview = () => {
       try {
         const data = await filesApi.getFile(fileId, token) as FileItem;
         setFile(data);
-        try {
-          const blob = await filesApi.contentById(fileId, token);
-          const url = URL.createObjectURL(blob);
-          setPreviewUrl(url);
-        } catch {
-          try {
-            const blob = await filesApi.downloadBlob(fileId, token);
-            const url = URL.createObjectURL(blob);
-            setPreviewUrl(url);
-          } catch (e) {
-            setPreviewUrl(null);
-          }
-        }
+        setPreviewUrl(data.path || null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to access file');
       }
